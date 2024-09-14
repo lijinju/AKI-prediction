@@ -18,7 +18,7 @@ past_AKI, hypertension,diabetes_mellitus, heart_failure,cardiovascular_disease,o
 FROM Demographic_for_tableone ;
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.0f2143fb-c73f-407d-b4e2-15bfe7dc4c88"),
+    Output(rid="ri.foundry.main.dataset.877ff7a6-ff31-4f60-a5f3-b28978fa253d"),
     Demographic_for_tableone=Input(rid="ri.foundry.main.dataset.77e107cc-6218-4565-86a9-754d545a72bd")
 )
 SELECT  person_id,has_AKI AS outcome,
