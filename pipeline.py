@@ -614,3 +614,104 @@ def log_vaccine(vaccine_group):
     plt.title('Logistic Regression Coefficients')
     plt.show()
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.4ce59be2-d7db-425e-abac-9fda47298267"),
+    infection_group=Input(rid="ri.foundry.main.dataset.877ff7a6-ff31-4f60-a5f3-b28978fa253d")
+)
+def mlp(infection_group):    
+    df = infection_group
+    df_array = df.to_numpy(dtype=int)
+    X_train = df_array[:100000,2:]
+    Y_train = df_array[:100000,1]
+
+    X_test = df_array[2000000:,2:]
+    Y_test = df_array[2000000:,1]
+
+    mlp = Network()
+    criterion = nn.BCELoss()
+    optimizer = torch.optim.SGD(mlp.parameters(), lr=0.1)
+
+    traindata = Data(X_train, Y_train)
+    trainloader = DataLoader(traindata, batch_size=128, 
+                            shuffle=True, num_workers=0)
+
+    testdata = Data(X_test, Y_test)
+    testloader = DataLoader(testdata, batch_size=1024, 
+                            shuffle=True, num_workers=0)
+
+    epochs = 200
+    for epoch in range(epochs):
+        running_loss = 0.0
+        for i, data in enumerate(trainloader, 0):
+            inputs, labels = data
+            labels = labels[:,None]
+            # set optimizer to zero grad to remove previous epoch gradients
+            optimizer.zero_grad()
+            # forward propagation
+            outputs = mlp(inputs)
+            loss = criterion(outputs, labels)
+            # backward propagation
+            loss.backward()
+            # optimize
+            optimizer.step()
+            running_loss += loss.item()
+        # display statistics
+        print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.5f}')
+    
+        with torch.no_grad():
+            for i, data in enumerate(trainloader, 0):
+                inputs, labels = data
+                labels = labels[:,None]
+
+                outputs = mlp(inputs)
+                test_pred = torch.round(outputs)
+                acc = accuracy_fn(labels,test_pred)
+
+                print(f'[{epoch + 1}, {i + 1:5d}] acc: {acc:.5f}')
+                
+                break
+
+    return
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+import pandas as pd
+
+input_dim = 9
+hidden_layers = 25
+output_dim = 1
+
+class Data(Dataset):  
+    def __init__(self, X_train, y_train):
+        self.X = torch.from_numpy(X_train.astype(np.float32))
+        # need to convert float64 to Long else 
+        # will get the following error
+        # RuntimeError: expected scalar type Long but found Float
+        self.y = torch.from_numpy(y_train.astype(np.float32))
+        self.len = self.X.shape[0]
+    
+    def __getitem__(self, index):
+        return self.X[index], self.y[index]
+        
+    def __len__(self):
+        return self.len
+
+class Network(nn.Module):
+    def __init__(self):
+        super(Network, self).__init__()
+        self.linear1 = nn.Linear(input_dim, hidden_layers)
+        self.linear2 = nn.Linear(hidden_layers, output_dim)  
+
+    def forward(self, x):
+        x = torch.sigmoid(self.linear1(x))
+        x = self.linear2(x)
+        x = torch.sigmoid(x) 
+        return x
+
+def accuracy_fn(y_true, y_pred):
+    correct = torch.eq(y_true, y_pred).sum().item() # torch.eq() calculates where two tensors are equal
+    acc = (correct / len(y_pred)) * 100 
+    return acc
+
