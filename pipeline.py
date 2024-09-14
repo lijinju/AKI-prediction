@@ -289,6 +289,95 @@ def log_10thousand(all_cohort):
     plt.show()
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.4f77e3ca-81e8-4d89-b394-06a7784d0020"),
+    all_cohort=Input(rid="ri.foundry.main.dataset.e6dc10f3-82c9-4ddd-8496-cc69f3756d25")
+)
+def log_change_label(all_cohort):
+    
+    #now vaccine 1 infection 2
+    # adding age 
+    import pandas as pd
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import roc_curve, auc
+    from sklearn.preprocessing import StandardScaler
+    import matplotlib.pyplot as plt
+    import statsmodels.api as sm
+    import numpy as np
+
+    # 对分类变量进行独热编码
+    categorical_vars = ['vaccine_infection','gender', 'race', 'ethnicity', 'past_AKI', 'hypertension', 'diabetes_mellitus', 'heart_failure', 'cardiovascular_disease', 'obesity']
+    all_cohort = pd.get_dummies(all_cohort, columns=categorical_vars, drop_first=True)
+
+    # 确保所有数据都是数值类型
+    all_cohort = all_cohort.apply(pd.to_numeric, errors='coerce')
+    all_cohort = all_cohort.dropna()
+
+    # 随机选择十万个样本
+    sampled_data = all_cohort.sample(n=100000, random_state=42)
+
+    # 准备数据
+    X = sampled_data.drop(columns=['outcome'])  # 特征矩阵
+    y = sampled_data['outcome']                # 目标变量
+
+    # 标准化数据
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+
+    # 分割数据集
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # 创建和训练逻辑回归模型，增加最大迭代次数
+    model = LogisticRegression(max_iter=5000)
+    model.fit(X_train, y_train)
+
+    # 在测试集上进行预测
+    y_pred = model.predict(X_test)
+
+    # 预测类别概率
+    probabilities = model.predict_proba(X_test)
+
+    # 输出预测为1的概率
+    print(probabilities[:, 1])
+
+    # 计算AUC曲线
+    y_score = model.predict_proba(X_test)[:, 1]
+    fpr, tpr, _ = roc_curve(y_test, y_score)
+    roc_auc = auc(fpr, tpr)
+
+    # 绘制AUC曲线
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic of LogisticRegression')
+    plt.legend(loc="lower right")
+    plt.show()
+
+    # 使用 statsmodels 进行模型总结
+    logit_model = sm.Logit(y_train, sm.add_constant(X_train))
+    result = logit_model.fit()
+    print(result.summary())
+
+    # 获取模型系数
+    coefficients = model.coef_[0]
+
+    # 获取特征名称
+    feature_names = sampled_data.drop(columns=['outcome']).columns
+
+    # 绘制特征重要性条形图
+    plt.figure(figsize=(10, 6))
+    plt.barh(range(len(coefficients)), coefficients, align='center')
+    plt.yticks(range(len(coefficients)), feature_names)
+    plt.xlabel('Coefficient Value')
+    plt.ylabel('Features')
+    plt.title('Logistic Regression Coefficients')
+    plt.show()
+
+@transform_pandas(
     Output(rid="ri.vector.main.execute.dbd7e730-5c9f-4c3d-baf0-23b26cdc9400"),
     all_cohort=Input(rid="ri.foundry.main.dataset.e6dc10f3-82c9-4ddd-8496-cc69f3756d25")
 )
@@ -437,4 +526,91 @@ def log_reg_1(all_cohort):
     plt.show()
 
     
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.8e56e15a-d7ee-4833-9dc5-e723a5db5a83"),
+    vaccine_group=Input(rid="ri.foundry.main.dataset.83ec449a-947d-44d8-83a9-88e9743f0ab8")
+)
+def log_vaccine(vaccine_group):
+
+    import pandas as pd
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import roc_curve, auc
+    from sklearn.preprocessing import StandardScaler
+    import matplotlib.pyplot as plt
+    import statsmodels.api as sm
+    import numpy as np
+
+    # 对分类变量进行独热编码
+    categorical_vars = ['vaccine', 'gender', 'race', 'ethnicity', 'past_AKI', 'hypertension', 'diabetes_mellitus', 'heart_failure', 'cardiovascular_disease', 'obesity']
+    vaccine_group = pd.get_dummies(vaccine_group, columns=categorical_vars, drop_first=True)
+
+    # 确保所有数据都是数值类型
+    vaccine_group = vaccine_group.apply(pd.to_numeric, errors='coerce')
+    vaccine_group = vaccine_group.dropna()
+
+    # 随机选择十万个样本
+    sampled_data = vaccine_group.sample(n=100000, random_state=42)
+
+    # 准备数据
+    X = sampled_data.drop(columns=['outcome'])  # 特征矩阵
+    y = sampled_data['outcome']                # 目标变量
+
+    # 标准化数据
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+
+    # 分割数据集
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # 创建和训练逻辑回归模型，增加最大迭代次数
+    model = LogisticRegression(max_iter=5000)
+    model.fit(X_train, y_train)
+
+    # 在测试集上进行预测
+    y_pred = model.predict(X_test)
+
+    # 预测类别概率
+    probabilities = model.predict_proba(X_test)
+
+    # 输出预测为1的概率
+    print(probabilities[:, 1])
+
+    # 计算AUC曲线
+    y_score = model.predict_proba(X_test)[:, 1]
+    fpr, tpr, _ = roc_curve(y_test, y_score)
+    roc_auc = auc(fpr, tpr)
+
+    # 绘制AUC曲线
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic of LogisticRegression')
+    plt.legend(loc="lower right")
+    plt.show()
+
+    # 使用 statsmodels 进行模型总结
+    logit_model = sm.Logit(y_train, sm.add_constant(X_train))
+    result = logit_model.fit()
+    print(result.summary())
+
+    # 获取模型系数
+    coefficients = model.coef_[0]
+
+    # 获取特征名称
+    feature_names = sampled_data.drop(columns=['outcome']).columns
+
+    # 绘制特征重要性条形图
+    plt.figure(figsize=(10, 6))
+    plt.barh(range(len(coefficients)), coefficients, align='center')
+    plt.yticks(range(len(coefficients)), feature_names)
+    plt.xlabel('Coefficient Value')
+    plt.ylabel('Features')
+    plt.title('Logistic Regression Coefficients')
+    plt.show()
 
